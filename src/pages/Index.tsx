@@ -5,9 +5,17 @@ import { Input } from '@/components/ui/input';
 import Icon from '@/components/ui/icon';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Textarea } from '@/components/ui/textarea';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 const Index = () => {
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedAI, setSelectedAI] = useState('chatgpt');
+  const [chatInput, setChatInput] = useState('');
+  const [chatHistory, setChatHistory] = useState<{ai: string, messages: {role: 'user' | 'assistant', content: string}[]}[]>([]);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const aiTools = [
     {
@@ -16,7 +24,7 @@ const Index = () => {
       description: 'Универсальный ИИ-помощник для текстов, кода, переводов',
       category: 'Текст',
       isPopular: true,
-      url: 'https://chat.openai.com',
+      chatKey: 'chatgpt',
       icon: '💬'
     },
     {
@@ -25,7 +33,7 @@ const Index = () => {
       description: 'Продвинутый ИИ для анализа, рассуждений и творчества',
       category: 'Текст',
       isPopular: true,
-      url: 'https://claude.ai',
+      chatKey: 'claude',
       icon: '🤖'
     },
     {
@@ -34,7 +42,7 @@ const Index = () => {
       description: 'Генерация изображений и арта высокого качества',
       category: 'Изображения',
       isPopular: true,
-      url: 'https://midjourney.com',
+      chatKey: 'midjourney',
       icon: '🎨'
     },
     {
@@ -43,7 +51,7 @@ const Index = () => {
       description: 'ИИ от Google для работы с текстом и изображениями',
       category: 'Мультимодал',
       isPopular: false,
-      url: 'https://gemini.google.com',
+      chatKey: 'gemini',
       icon: '✨'
     },
     {
@@ -52,7 +60,7 @@ const Index = () => {
       description: 'Мощный ИИ для программирования и анализа',
       category: 'Код',
       isPopular: false,
-      url: 'https://deepseek.ai',
+      chatKey: 'deepseek',
       icon: '💻'
     },
     {
@@ -61,7 +69,7 @@ const Index = () => {
       description: 'ИИ с доступом к актуальной информации',
       category: 'Текст',
       isPopular: false,
-      url: 'https://grok.x.ai',
+      chatKey: 'grok',
       icon: '🚀'
     },
     {
@@ -70,7 +78,7 @@ const Index = () => {
       description: 'Открытый ИИ для генерации изображений',
       category: 'Изображения',
       isPopular: false,
-      url: 'https://stability.ai',
+      chatKey: 'stablediffusion',
       icon: '🖼️'
     },
     {
@@ -79,7 +87,7 @@ const Index = () => {
       description: 'ИИ-ассистент программиста прямо в редакторе',
       category: 'Код',
       isPopular: true,
-      url: 'https://github.com/features/copilot',
+      chatKey: 'copilot',
       icon: '👨‍💻'
     }
   ];
@@ -147,6 +155,46 @@ const Index = () => {
     tool.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
     tool.category.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const handleStartChat = (aiKey: string) => {
+    setSelectedAI(aiKey);
+    setIsDialogOpen(true);
+  };
+
+  const sendMessage = () => {
+    if (!chatInput.trim()) return;
+    
+    // Имитация ответа ИИ
+    const responses = {
+      chatgpt: 'Привет! Я ChatGPT. Могу помочь с текстами, кодом, переводами и анализом. Что вас интересует?',
+      claude: 'Здравствуйте! Я Claude от Anthropic. Специализируюсь на детальном анализе, творческих задачах и помощи в работе. Чем могу помочь?',
+      gemini: 'Приветствую! Я Gemini от Google. Умею работать с текстом и изображениями. Какая задача стоит перед вами?',
+      midjourney: 'Добро пожаловать! Я помогу создать потрясающие изображения по вашему описанию. Опишите, что хотите увидеть!',
+      deepseek: 'Привет! Я DeepSeek, специализируюсь на программировании и анализе кода. Готов помочь с разработкой!',
+      grok: 'Здравствуйте! Я Grok, у меня есть доступ к актуальной информации. О чём хотите узнать?',
+      stablediffusion: 'Привет! Помогу создать изображения через Stable Diffusion. Опишите желаемую картинку!',
+      copilot: 'Приветствую, разработчик! Я GitHub Copilot, готов помочь с кодом и программированием!'
+    };
+
+    const currentChat = chatHistory.find(chat => chat.ai === selectedAI);
+    const newMessage = { role: 'user' as const, content: chatInput };
+    const aiResponse = { role: 'assistant' as const, content: responses[selectedAI as keyof typeof responses] || 'Привет! Чем могу помочь?' };
+    
+    if (currentChat) {
+      currentChat.messages.push(newMessage, aiResponse);
+      setChatHistory([...chatHistory]);
+    } else {
+      setChatHistory([...chatHistory, { ai: selectedAI, messages: [newMessage, aiResponse] }]);
+    }
+    
+    setChatInput('');
+  };
+
+  const getCurrentChat = () => {
+    return chatHistory.find(chat => chat.ai === selectedAI)?.messages || [];
+  };
+
+  const selectedTool = aiTools.find(tool => tool.chatKey === selectedAI);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
@@ -247,9 +295,9 @@ const Index = () => {
                     <Button 
                       size="sm" 
                       className="bg-indigo-600 hover:bg-indigo-700 text-xs px-4"
-                      onClick={() => window.open(tool.url, '_blank')}
+                      onClick={() => handleStartChat(tool.chatKey)}
                     >
-                      Использовать
+                      Чат с ИИ
                     </Button>
                   </div>
                 </CardContent>
@@ -331,10 +379,14 @@ const Index = () => {
             Присоединяйтесь к тысячам фрилансеров, которые ускорили свою работу с помощью ИИ
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" className="bg-white text-indigo-600 hover:bg-slate-50 px-8">
-              Начать бесплатно
-            </Button>
-            <Button size="lg" variant="outline" className="border-white text-white hover:bg-white hover:text-indigo-600 px-8">
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+              <DialogTrigger asChild>
+                <Button size="lg" className="bg-white text-indigo-600 hover:bg-slate-50 px-8">
+                  Начать бесплатно
+                </Button>
+              </DialogTrigger>
+            </Dialog>
+            <Button size="lg" variant="outline" className="border-white text-white hover:bg-white hover:text-indigo-600 px-8" onClick={() => document.getElementById('tools')?.scrollIntoView({behavior: 'smooth'})}>
               Смотреть инструменты
             </Button>
           </div>
@@ -405,6 +457,104 @@ const Index = () => {
           </div>
         </div>
       </footer>
+      
+      {/* AI Chat Dialog */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[80vh] p-0">
+          <div className="flex h-[600px]">
+            {/* AI Selection Sidebar */}
+            <div className="w-64 border-r bg-slate-50 p-4">
+              <DialogHeader className="mb-4">
+                <DialogTitle className="text-lg">Выберите ИИ-помощника</DialogTitle>
+              </DialogHeader>
+              <ScrollArea className="h-full">
+                <div className="space-y-2">
+                  {aiTools.map((tool) => (
+                    <Button
+                      key={tool.chatKey}
+                      variant={selectedAI === tool.chatKey ? "default" : "ghost"}
+                      className={`w-full justify-start text-left h-auto p-3 ${selectedAI === tool.chatKey ? 'bg-indigo-600 text-white' : 'hover:bg-slate-100'}`}
+                      onClick={() => setSelectedAI(tool.chatKey)}
+                    >
+                      <div className="flex items-center space-x-3">
+                        <span className="text-xl">{tool.icon}</span>
+                        <div className="flex-1 text-left">
+                          <div className="font-medium text-sm">{tool.name}</div>
+                          <div className={`text-xs opacity-75 line-clamp-2 ${selectedAI === tool.chatKey ? 'text-indigo-100' : 'text-slate-500'}`}>
+                            {tool.description}
+                          </div>
+                        </div>
+                      </div>
+                    </Button>
+                  ))}
+                </div>
+              </ScrollArea>
+            </div>
+            
+            {/* Chat Area */}
+            <div className="flex-1 flex flex-col">
+              <div className="border-b p-4 bg-white">
+                <div className="flex items-center space-x-3">
+                  <span className="text-2xl">{selectedTool?.icon}</span>
+                  <div>
+                    <h3 className="font-semibold text-lg">{selectedTool?.name}</h3>
+                    <p className="text-sm text-slate-600">{selectedTool?.description}</p>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Messages */}
+              <ScrollArea className="flex-1 p-4">
+                <div className="space-y-4">
+                  {getCurrentChat().length === 0 ? (
+                    <div className="text-center py-8 text-slate-500">
+                      <div className="text-4xl mb-4">{selectedTool?.icon}</div>
+                      <p>Начните диалог с {selectedTool?.name}</p>
+                      <p className="text-sm mt-2">Задайте вопрос или опишите задачу</p>
+                    </div>
+                  ) : (
+                    getCurrentChat().map((message, index) => (
+                      <div key={index} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                        <div className={`max-w-[80%] p-3 rounded-lg ${message.role === 'user' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-900'}`}>
+                          <p className="text-sm">{message.content}</p>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </ScrollArea>
+              
+              {/* Input Area */}
+              <div className="border-t p-4 bg-white">
+                <div className="flex space-x-2">
+                  <Textarea 
+                    placeholder={`Напишите сообщение для ${selectedTool?.name}...`}
+                    value={chatInput}
+                    onChange={(e) => setChatInput(e.target.value)}
+                    className="flex-1 min-h-[60px] resize-none"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        sendMessage();
+                      }
+                    }}
+                  />
+                  <Button 
+                    onClick={sendMessage}
+                    className="bg-indigo-600 hover:bg-indigo-700 px-6"
+                    disabled={!chatInput.trim()}
+                  >
+                    <Icon name="Send" className="w-4 h-4" />
+                  </Button>
+                </div>
+                <p className="text-xs text-slate-500 mt-2">
+                  Нажмите Enter для отправки, Shift+Enter для новой строки
+                </p>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
