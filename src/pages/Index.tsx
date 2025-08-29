@@ -14,8 +14,9 @@ const Index = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedAI, setSelectedAI] = useState('chatgpt');
   const [chatInput, setChatInput] = useState('');
-  const [chatHistory, setChatHistory] = useState<{ai: string, messages: {role: 'user' | 'assistant', content: string}[]}[]>([]);
+  const [chatHistory, setChatHistory] = useState<{ai: string, messages: {role: 'user' | 'assistant' | 'collective', content: string, aiName?: string}[]}[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [showAISelector, setShowAISelector] = useState(false);
 
   const aiTools = [
     {
@@ -56,6 +57,15 @@ const Index = () => {
     },
     {
       id: 5,
+      name: 'Google Veo 3',
+      description: 'Новейший ИИ для генерации качественного видео',
+      category: 'Видео',
+      isPopular: true,
+      chatKey: 'veo3',
+      icon: '🎥'
+    },
+    {
+      id: 6,
       name: 'DeepSeek',
       description: 'Мощный ИИ для программирования и анализа',
       category: 'Код',
@@ -64,7 +74,7 @@ const Index = () => {
       icon: '💻'
     },
     {
-      id: 6,
+      id: 7,
       name: 'Grok',
       description: 'ИИ с доступом к актуальной информации',
       category: 'Текст',
@@ -73,7 +83,7 @@ const Index = () => {
       icon: '🚀'
     },
     {
-      id: 7,
+      id: 8,
       name: 'Stable Diffusion',
       description: 'Открытый ИИ для генерации изображений',
       category: 'Изображения',
@@ -82,13 +92,22 @@ const Index = () => {
       icon: '🖼️'
     },
     {
-      id: 8,
+      id: 9,
       name: 'GitHub Copilot',
       description: 'ИИ-ассистент программиста прямо в редакторе',
       category: 'Код',
       isPopular: true,
       chatKey: 'copilot',
       icon: '👨‍💻'
+    },
+    {
+      id: 10,
+      name: 'Все ИИ одновременно',
+      description: 'Коллективное обсуждение с лучшим результатом',
+      category: 'Коллектив',
+      isPopular: true,
+      chatKey: 'collective',
+      icon: '🧠'
     }
   ];
 
@@ -170,21 +189,43 @@ const Index = () => {
       claude: 'Здравствуйте! Я Claude от Anthropic. Специализируюсь на детальном анализе, творческих задачах и помощи в работе. Чем могу помочь?',
       gemini: 'Приветствую! Я Gemini от Google. Умею работать с текстом и изображениями. Какая задача стоит перед вами?',
       midjourney: 'Добро пожаловать! Я помогу создать потрясающие изображения по вашему описанию. Опишите, что хотите увидеть!',
+      veo3: 'Привет! Я Google Veo 3 - новейший ИИ для создания качественного видео. Опишите сценарий вашего видео!',
       deepseek: 'Привет! Я DeepSeek, специализируюсь на программировании и анализе кода. Готов помочь с разработкой!',
       grok: 'Здравствуйте! Я Grok, у меня есть доступ к актуальной информации. О чём хотите узнать?',
       stablediffusion: 'Привет! Помогу создать изображения через Stable Diffusion. Опишите желаемую картинку!',
       copilot: 'Приветствую, разработчик! Я GitHub Copilot, готов помочь с кодом и программированием!'
     };
 
-    const currentChat = chatHistory.find(chat => chat.ai === selectedAI);
-    const newMessage = { role: 'user' as const, content: chatInput };
-    const aiResponse = { role: 'assistant' as const, content: responses[selectedAI as keyof typeof responses] || 'Привет! Чем могу помочь?' };
-    
-    if (currentChat) {
-      currentChat.messages.push(newMessage, aiResponse);
-      setChatHistory([...chatHistory]);
+    if (selectedAI === 'collective') {
+      // Коллективный режим
+      const currentChat = chatHistory.find(chat => chat.ai === selectedAI);
+      const newMessage = { role: 'user' as const, content: chatInput };
+      
+      const aiResponses = [
+        { role: 'collective' as const, content: `ChatGPT: Я считаю, что "${chatInput}" - очень интересный вопрос! Позвольте мне подумать...`, aiName: 'ChatGPT' },
+        { role: 'collective' as const, content: `Claude: Я согласен с ChatGPT, но добавлю: нужно также учесть контекст и нюансы.`, aiName: 'Claude' },
+        { role: 'collective' as const, content: `Gemini: Интересно! Мой подход будет немного другим - я фокусируюсь на мультимодальности.`, aiName: 'Gemini' },
+        { role: 'collective' as const, content: `🎆 **ЛУЧШИЙ ОТВЕТ**: После обсуждения, мы пришли к следующему выводу по вашему запросу: нужно комбинировать техническую проработку, аналитический подход и креативное мышление для наилучшего результата.`, aiName: 'Коллектив' }
+      ];
+      
+      if (currentChat) {
+        currentChat.messages.push(newMessage, ...aiResponses);
+        setChatHistory([...chatHistory]);
+      } else {
+        setChatHistory([...chatHistory, { ai: selectedAI, messages: [newMessage, ...aiResponses] }]);
+      }
     } else {
-      setChatHistory([...chatHistory, { ai: selectedAI, messages: [newMessage, aiResponse] }]);
+      // Обычный режим
+      const currentChat = chatHistory.find(chat => chat.ai === selectedAI);
+      const newMessage = { role: 'user' as const, content: chatInput };
+      const aiResponse = { role: 'assistant' as const, content: responses[selectedAI as keyof typeof responses] || 'Привет! Чем могу помочь?' };
+      
+      if (currentChat) {
+        currentChat.messages.push(newMessage, aiResponse);
+        setChatHistory([...chatHistory]);
+      } else {
+        setChatHistory([...chatHistory, { ai: selectedAI, messages: [newMessage, aiResponse] }]);
+      }
     }
     
     setChatInput('');
@@ -245,9 +286,13 @@ const Index = () => {
                 className="pl-10 h-12 text-base border-slate-200 focus:border-indigo-500"
               />
             </div>
-            <Button size="lg" className="bg-indigo-600 hover:bg-indigo-700 px-8">
-              Найти
-            </Button>
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+              <DialogTrigger asChild>
+                <Button size="lg" className="bg-indigo-600 hover:bg-indigo-700 px-8" onClick={() => setSelectedAI('chatgpt')}>
+                  Найти
+                </Button>
+              </DialogTrigger>
+            </Dialog>
           </div>
 
           <div className="flex flex-wrap justify-center gap-2 mb-8">
@@ -458,42 +503,13 @@ const Index = () => {
         </div>
       </footer>
       
-      {/* AI Chat Dialog */}
+      {/* AI Chat Dialog - Full Screen */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[80vh] p-0">
-          <div className="flex h-[600px]">
-            {/* AI Selection Sidebar */}
-            <div className="w-64 border-r bg-slate-50 p-4">
-              <DialogHeader className="mb-4">
-                <DialogTitle className="text-lg">Выберите ИИ-помощника</DialogTitle>
-              </DialogHeader>
-              <ScrollArea className="h-full">
-                <div className="space-y-2">
-                  {aiTools.map((tool) => (
-                    <Button
-                      key={tool.chatKey}
-                      variant={selectedAI === tool.chatKey ? "default" : "ghost"}
-                      className={`w-full justify-start text-left h-auto p-3 ${selectedAI === tool.chatKey ? 'bg-indigo-600 text-white' : 'hover:bg-slate-100'}`}
-                      onClick={() => setSelectedAI(tool.chatKey)}
-                    >
-                      <div className="flex items-center space-x-3">
-                        <span className="text-xl">{tool.icon}</span>
-                        <div className="flex-1 text-left">
-                          <div className="font-medium text-sm">{tool.name}</div>
-                          <div className={`text-xs opacity-75 line-clamp-2 ${selectedAI === tool.chatKey ? 'text-indigo-100' : 'text-slate-500'}`}>
-                            {tool.description}
-                          </div>
-                        </div>
-                      </div>
-                    </Button>
-                  ))}
-                </div>
-              </ScrollArea>
-            </div>
-            
-            {/* Chat Area */}
+        <DialogContent className="max-w-[95vw] max-h-[95vh] w-full h-full p-0">
+          <div className="flex h-full">
+            {/* Chat Area - Main */}
             <div className="flex-1 flex flex-col">
-              <div className="border-b p-4 bg-white">
+              <div className="border-b p-4 bg-white flex items-center justify-between">
                 <div className="flex items-center space-x-3">
                   <span className="text-2xl">{selectedTool?.icon}</span>
                   <div>
@@ -501,22 +517,52 @@ const Index = () => {
                     <p className="text-sm text-slate-600">{selectedTool?.description}</p>
                   </div>
                 </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowAISelector(!showAISelector)}
+                  className="flex items-center space-x-2"
+                >
+                  <Icon name="Users" className="w-4 h-4" />
+                  <span>Сменить ИИ</span>
+                </Button>
               </div>
               
               {/* Messages */}
               <ScrollArea className="flex-1 p-4">
-                <div className="space-y-4">
+                <div className="space-y-4 max-w-4xl mx-auto">
                   {getCurrentChat().length === 0 ? (
-                    <div className="text-center py-8 text-slate-500">
-                      <div className="text-4xl mb-4">{selectedTool?.icon}</div>
-                      <p>Начните диалог с {selectedTool?.name}</p>
-                      <p className="text-sm mt-2">Задайте вопрос или опишите задачу</p>
+                    <div className="text-center py-12 text-slate-500">
+                      <div className="text-6xl mb-4">{selectedTool?.icon}</div>
+                      <h3 className="text-xl font-medium mb-2">Начните диалог с {selectedTool?.name}</h3>
+                      <p className="text-sm">Задайте вопрос или опишите задачу</p>
+                      {selectedAI === 'collective' && (
+                        <div className="mt-4 p-4 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg max-w-md mx-auto">
+                          <p className="text-sm font-medium text-indigo-900 mb-2">🧠 Коллективный режим</p>
+                          <p className="text-xs text-indigo-700">Все ИИ обсудят ваш вопрос и дадут лучший ответ!</p>
+                        </div>
+                      )}
                     </div>
                   ) : (
                     getCurrentChat().map((message, index) => (
                       <div key={index} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                        <div className={`max-w-[80%] p-3 rounded-lg ${message.role === 'user' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-900'}`}>
-                          <p className="text-sm">{message.content}</p>
+                        <div className={`max-w-[75%] p-4 rounded-lg ${
+                          message.role === 'user' 
+                            ? 'bg-indigo-600 text-white' 
+                            : message.role === 'collective'
+                            ? message.content.includes('ЛУЧШИЙ ОТВЕТ')
+                              ? 'bg-gradient-to-r from-green-100 to-emerald-100 text-green-900 border-2 border-green-300'
+                              : 'bg-gradient-to-r from-slate-50 to-slate-100 text-slate-900'
+                            : 'bg-slate-100 text-slate-900'
+                        }`}>
+                          {message.role === 'collective' && message.aiName && (
+                            <div className="flex items-center space-x-2 mb-2">
+                              <span className="text-xs font-medium bg-white/20 px-2 py-1 rounded">
+                                {message.aiName}
+                              </span>
+                            </div>
+                          )}
+                          <p className="text-sm whitespace-pre-wrap">{message.content}</p>
                         </div>
                       </div>
                     ))
@@ -526,32 +572,95 @@ const Index = () => {
               
               {/* Input Area */}
               <div className="border-t p-4 bg-white">
-                <div className="flex space-x-2">
-                  <Textarea 
-                    placeholder={`Напишите сообщение для ${selectedTool?.name}...`}
-                    value={chatInput}
-                    onChange={(e) => setChatInput(e.target.value)}
-                    className="flex-1 min-h-[60px] resize-none"
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        sendMessage();
-                      }
-                    }}
-                  />
-                  <Button 
-                    onClick={sendMessage}
-                    className="bg-indigo-600 hover:bg-indigo-700 px-6"
-                    disabled={!chatInput.trim()}
-                  >
-                    <Icon name="Send" className="w-4 h-4" />
-                  </Button>
+                <div className="max-w-4xl mx-auto">
+                  <div className="flex space-x-3">
+                    <Textarea 
+                      placeholder={selectedAI === 'collective' ? 'Задайте вопрос для коллективного обсуждения...' : `Напишите сообщение для ${selectedTool?.name}...`}
+                      value={chatInput}
+                      onChange={(e) => setChatInput(e.target.value)}
+                      className="flex-1 min-h-[60px] resize-none text-base"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          sendMessage();
+                        }
+                      }}
+                    />
+                    <Button 
+                      onClick={sendMessage}
+                      className="bg-indigo-600 hover:bg-indigo-700 px-6 h-auto"
+                      disabled={!chatInput.trim()}
+                    >
+                      <Icon name="Send" className="w-5 h-5" />
+                    </Button>
+                  </div>
+                  <p className="text-xs text-slate-500 mt-2">
+                    Enter — отправить • Shift+Enter — новая строка
+                  </p>
                 </div>
-                <p className="text-xs text-slate-500 mt-2">
-                  Нажмите Enter для отправки, Shift+Enter для новой строки
-                </p>
               </div>
             </div>
+            
+            {/* AI Selection Sidebar - Collapsible */}
+            {showAISelector && (
+              <div className="w-80 border-l bg-slate-50 p-4 animate-slide-in-right">
+                <div className="flex items-center justify-between mb-4">
+                  <DialogTitle className="text-lg">Выбор ИИ-помощника</DialogTitle>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => setShowAISelector(false)}
+                  >
+                    <Icon name="X" className="w-4 h-4" />
+                  </Button>
+                </div>
+                <ScrollArea className="h-full">
+                  <div className="space-y-3">
+                    {aiTools.map((tool) => (
+                      <Button
+                        key={tool.chatKey}
+                        variant={selectedAI === tool.chatKey ? "default" : "ghost"}
+                        className={`w-full justify-start text-left h-auto p-4 ${
+                          selectedAI === tool.chatKey 
+                            ? tool.chatKey === 'collective'
+                              ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white'
+                              : 'bg-indigo-600 text-white'
+                            : 'hover:bg-slate-100'
+                        }`}
+                        onClick={() => {
+                          setSelectedAI(tool.chatKey);
+                          setShowAISelector(false);
+                        }}
+                      >
+                        <div className="flex items-center space-x-3 w-full">
+                          <span className="text-2xl">{tool.icon}</span>
+                          <div className="flex-1 text-left">
+                            <div className="font-medium text-sm mb-1">{tool.name}</div>
+                            <div className={`text-xs opacity-80 line-clamp-2 ${
+                              selectedAI === tool.chatKey ? 'text-white/90' : 'text-slate-500'
+                            }`}>
+                              {tool.description}
+                            </div>
+                            {tool.isPopular && (
+                              <Badge 
+                                variant="secondary" 
+                                className={`text-xs mt-2 ${
+                                  selectedAI === tool.chatKey 
+                                    ? 'bg-white/20 text-white/90' 
+                                    : 'bg-indigo-100 text-indigo-700'
+                                }`}
+                              >
+                                {tool.chatKey === 'collective' ? 'НОВОЕ' : 'ПОПУЛЯРНО'}
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                      </Button>
+                    ))}
+                  </div>
+                </ScrollArea>
+              </div>
+            )}
           </div>
         </DialogContent>
       </Dialog>
